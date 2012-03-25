@@ -1,0 +1,46 @@
+Thoughs on antskell - the Haskell ant simulator.
+
+* Overview
+  Antskell is a simple simulator of the population of an ant colony
+  written in Haskell. Ideally the output would be piped to some
+  graphing library so the population could be graphed over time.
+* Model basics
+** Time step
+   The colony will be updated once a day.
+** One queen
+   Colony will only have one queen, and as a first pass the queen will
+   also be immortal.
+*** Egg laying
+    The number of eggs the queen will be able to lay will be
+    determined by two factors:
+    1. Amount of food the queen has received.
+    2. Number of worker ants available to care for the eggs.
+    3. Maximum amount of eggs the queen can possibly lay in a day.
+    
+    Later, the amount of nest space could be added as a limiting
+    factor.
+** Workers
+   The following are characteristics of all workers:
+*** Hunger/food level
+    An individuals food level will decrease with time, and increases
+    when the an is provided with food.
+*** Age
+    Age will determine when the ant moves from egg/larva to another
+    role and when the ant dies off.
+*** Role
+    To start, there will only be two classes of worker ants.
+**** Egg/Larva
+     These are the eggs and larva that have not developed into ants
+     that can assume one of the other roles, but still require
+     food. Like the queen, food will need to be brought to them.
+**** Nursery
+     Responsible for tending the queen and her eggs. Food will need to
+     brought to them.
+**** Harvester
+     Responsible for finding food and returning it to the next. They
+     can eat at the food source, but it they will also return it to
+     the nest for use by other ants in the nest.
+** Constants
+   - Age limit :: The maximum life of a ant
+   - Calorie burn :: Amount of food an ant uses in a day. This is the
+                     same regardless of role.
