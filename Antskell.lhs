@@ -15,10 +15,9 @@ attributes for all ants, one for workers, and one for the queen.
 
 > data Ant = Ant { age :: Integer
 >                , food :: Integer
->                , role :: Role
 >                } deriving Show
 
-> data Worker = Worker { attrs :: Ant
+> data Worker = Worker { workerAttrs :: Ant
 >                      , role :: Role
 >                      } deriving Show
 
@@ -26,8 +25,8 @@ The queen doesn't have a role, since we know what it is. The 'maxEggs'
 is the maximum number of eggsthat the queen can lay in a day - given
 ideal conditions.
 
-> data Queen = Queen { attrs :: Ant
->                    ,  maxEggs :: Integer
+> data Queen = Queen { queenAttrs :: Ant
+>                    , maxEggs :: Integer
 >                    } deriving Show
 
 Data type for the nest
