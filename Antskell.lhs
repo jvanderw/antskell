@@ -54,17 +54,25 @@ A few ants for testing
 > w3 = Worker (Ant 1 9) Nursery
 > wls = [w1,w2,w3]
 
-Age all the workers in the list and remove the ones that have hit the
-max age.
+Age and use up some of the food for all the workers in the list and
+remove the ones that have hit the max age, or have starved.
 
-> ageWorkers :: [Worker] -> [Worker]
-> ageWorkers = filter notDead . map incAge
+> timeStepWorkers :: [Worker] -> [Worker]
+> timeStepWorkers = filter notDead . map ageAndEat
 
 > notDead   :: Worker -> Bool
-> notDead w = if (age(workerAttrs w)) > maxAge
->                       then False
->                       else True
+> notDead w = if ((age(workerAttrs w)) > maxAge) || ((food(workerAttrs w)) <= 0)
+>             then False
+>             else True
 
-> incAge   :: Worker -> Worker
-> incAge w = w{ workerAttrs = Ant{ age = (age(workerAttrs w) + 1)
->                                , food = food(workerAttrs w)}}
+> ageAndEat   :: Worker -> Worker
+> ageAndEat w = w{ workerAttrs = Ant{ age = (age(workerAttrs w) + 1)
+>                                , food = (food(workerAttrs w)
+>                                          - foodBurnRate)}}
+
+Use up food in the queen's stockpile.
+
+> timeStepQueen   :: Queen -> Queen
+> timeStepQueen q = q{ queenAttrs = Ant { age = (age(queenAttrs q))
+>                                       , food = (food(queenAttrs q)
+>                                                 - foodBurnRate)}}
