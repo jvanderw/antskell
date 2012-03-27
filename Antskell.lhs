@@ -43,15 +43,28 @@ Constants:
     maxFood: The maximum amount of food an ant can have.
     foodBurnRate: The amount of food an ant uses in one day.
     
-> maxAge = 20
+> maxAge = 2
 > maxFood = 10
 > foodBurnRate = 1
+
+A few ants for testing
+
+> w1 = Worker (Ant 0 10) Harvester
+> w2 = Worker (Ant 1 10) Harvester
+> w3 = Worker (Ant 1 9) Nursery
+> wls = [w1,w2,w3]
 
 Age all the workers in the list and remove the ones that have hit the
 max age.
 
-> ageWorkers    :: [Worker] -> [Worker]
-> ageWorkers ws = undefined --map (\x -> x{workerAttrs = Ant {age = (age(workerAttrs x) + 1), food = food(workerAttrs x)}}) ws
+> ageWorkers :: [Worker] -> [Worker]
+> ageWorkers = filter notDead . map incAge
+
+> notDead   :: Worker -> Bool
+> notDead w = if (age(workerAttrs w)) > maxAge
+>                       then False
+>                       else True
 
 > incAge   :: Worker -> Worker
-> incAge w = undefined
+> incAge w = w{ workerAttrs = Ant{ age = (age(workerAttrs w) + 1)
+>                                , food = food(workerAttrs w)}}
