@@ -43,7 +43,7 @@ Constants:
     maxFood: The maximum amount of food an ant can have.
     foodBurnRate: The amount of food an ant uses in one day.
     
-> maxAge = 2
+> maxAge = 20
 > maxFood = 10
 > foodBurnRate = 1
 
@@ -76,3 +76,22 @@ Use up food in the queen's stockpile.
 > timeStepQueen q = q{ queenAttrs = Ant { age = (age(queenAttrs q))
 >                                       , food = (food(queenAttrs q)
 >                                                 - foodBurnRate)}}
+
+Time step the entire nest.
+
+> timeStepNest :: Nest -> Nest
+> timeStepNest n = n{ workers = timeStepWorkers (workers n)
+>                   , queen = timeStepQueen (queen n) }
+
+Feed the ants from the stockpile. Ants are fed by priority:
+1. The queen
+2. Nursery workers
+3. Harvesters
+
+> feedAnts   :: Nest -> Nest
+> feedAnts n = undefined
+
+> feedQueen   :: Nest -> Nest
+> feedQueen n = undefined
+
+Determine the roles for the work ants
