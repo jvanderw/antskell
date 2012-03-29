@@ -102,15 +102,41 @@ A data type is used to hold the weight factors
 >                              Nursery   -> roleNursery x
 >                              Harvester -> roleHarvester x
 
-> feedNest   :: Nest -> Nest
-> feedNest n = undefined
-
-> feedAnts   :: Nest -> Nest
-> feedAnts n = undefined
+> feedNest :: Nest -> Nest
+> feedNest = feedWorkers . feedQueen
 
 > feedQueen   :: Nest -> Nest
-> feedQueen n = undefined
+> feedQueen n = n { queen = feedQueen' (fst f) (queen n)
+>                 , foodStore = foodStore (snd f) }
+>     where f = foodAvailable (maxFood - (food (queenAttrs (queen n)))) n
 
+> feedQueen'     :: Integer -> Queen -> Queen
+> feedQueen' f q = Queen (Ant (age (queenAttrs q)) ((food (queenAttrs q)) + f))
+>                        (maxEggs q)
+
+> feedWorkers   :: Nest -> Nest
+> feedWorkers n = undefined
+
+> feedWorkers'    :: [Worker] -> [Worker]
+> feedWorkers' ws = undefined
+
+Get the number of ants in list that can be fed.
+
+> numCanFeed      :: Nest -> Integer
+> numCanFeed n = fromIntegral
+>                   $ length
+>                   $ takeWhile (\x -> x <= foodStore n)
+>                   $ scanl (\x y -> (maxFood - (food (workerAttrs y))) + x ) 0
+>                     (workers n)
+
+Request a certain amount of food from the Nest stockpile. Return what
+of the request can be fullfiled, and the Nest with the food returned
+removed from the stockpile.
+
+> foodAvailable     :: Integer -> Nest -> (Integer, Nest)
+> foodAvailable r n = if r <= foodStore n
+>                     then (r, n {foodStore = (foodStore n) - r})
+>                     else (foodStore n, n {foodStore = 0})
 
 Determine the roles for the work ants
 
@@ -127,8 +153,8 @@ Constants:
 
 A few ants for testing
 
-> w1 = Worker (Ant 0 10) Harvester 0.0
-> w2 = Worker (Ant 1 10) Harvester 0.0
+> w1 = Worker (Ant 0 5) Harvester 0.0
+> w2 = Worker (Ant 1 1) Harvester 0.0
 > w3 = Worker (Ant 1 9) Nursery 0.0
 > wls = [w1,w2,w3]
 
