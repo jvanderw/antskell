@@ -40,7 +40,35 @@ Thoughs on antskell - the Haskell ant simulator.
      Responsible for finding food and returning it to the next. They
      can eat at the food source, but it they will also return it to
      the nest for use by other ants in the nest.
+** Nest
+   The nest has three components:
+   1. A list of workers
+   2. A queen
+   3. Food store.
+*** Food store
+    All the food collected by a harvester is placed in the food
+    store. All the ants then eat from the store, with a priority being
+    placed on the queen being fed first.
 ** Constants
    - Age limit :: The maximum life of a ant
    - Calorie burn :: Amount of food an ant uses in a day. This is the
                      same regardless of role.
+* What happens in a day
+  1. Ants are aged. Those that are past the age limit are removed from
+     the list of worker ants.
+  2. All the ants eat. The food in the nest food store is used to feed
+     everyone in the nest. Need to think about the algorithm that
+     decides who gets fed and how much.
+  3. Any ants with a food level of 0 die, and are removed from the list.
+  4. Check the queen, decide how may eggs the queen can lay. The
+     number of eggs to lay is determined by:
+     1. Food level of queen, if it is below a given level, no eggs are
+        laid. This will depend in the size
+     2. A check of the number of ants working the nursery is done. The
+        nursery must not be "understaffed", if it is, a minimum number
+        of eggs will be laid. The number increases with the staffing
+        level.
+  5. Decide on roles for the workers. Two factors will decide this
+     - Number of eggs in the nursery.
+     - Food level in the stockpile.
+
