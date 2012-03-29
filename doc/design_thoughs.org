@@ -72,3 +72,22 @@ Thoughs on antskell - the Haskell ant simulator.
      - Number of eggs in the nursery.
      - Food level in the stockpile.
 
+* Feeding
+** Feeding the queen
+   - Need to check and see if there is enough food in the stockpile
+     to feed the queen.
+   - If there is, then reduce the amount from the stockpile and
+     increase the food level of the queen.
+*** Edge cases
+    - The food in the stockpile is less than the amount of food the
+      queen wants.
+** Feeding the workers
+   - Sort the workers by their weight.
+   - Start feeding the workers, starting with the first in the list.
+     + Each fed worker requires that we check the stockpile for food,
+       reduce the amount of food in the stockpile, and then feed the
+       worker.
+   - Stop feeding workers in the list when the food in stockpile runs
+     out.
+
+       
