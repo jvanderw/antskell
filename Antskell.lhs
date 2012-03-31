@@ -115,17 +115,28 @@ A data type is used to hold the weight factors
 >                        (maxEggs q)
 
 > feedWorkers   :: Nest -> Nest
-> feedWorkers n = undefined
+> feedWorkers n = n {workers = feedWorkers' n (workers n)}
 
-> feedWorkers'    :: [Worker] -> [Worker]
-> feedWorkers' ws = undefined
+> feedWorkers'      :: Nest -> [Worker] -> [Worker]
+> feedWorkers' n ws = undefined
+>     where t = splitAt numCanFeed n
 
-Get the number of ants in list that can be fed.
+> feedWorkers2   :: Nest -> Nest
+> feedWorkers2 n = n { workers = fst t
+>                    , foodStore = snd t }
+>     where t = feedWorkers2' (workers n, foodStore n)
 
-> numCanFeed      :: Nest -> Integer
-> numCanFeed n = fromIntegral
->                   $ length
->                   $ takeWhile (\x -> x <= foodStore n)
+> feedWorkers2          :: [Worker] -> Integer -> [Worker]
+> feedWorkers2 [] _     = []
+> feedWorkers2 xs 0     = xs
+> feedWorkers2 (x:xs) f = (feedAnt x : feedWorkers2 xs (f - (food (workerAttrs x) - maxFood) )
+
+Get the number of ants in list that can be fed, and the amount of food
+out of the food store that will be used.
+
+> numCanFeed      :: Nest -> (Integer, Integer)
+> numCanFeed n = (fromIntegral (length fs), last fs)
+>     where fs = takeWhile (\x -> x <= foodStore n)
 >                   $ scanl (\x y -> (maxFood - (food (workerAttrs y))) + x ) 0
 >                     (workers n)
 
