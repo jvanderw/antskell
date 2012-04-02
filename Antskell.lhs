@@ -114,42 +114,68 @@ A data type is used to hold the weight factors
 > feedQueen' f q = Queen (Ant (age (queenAttrs q)) ((food (queenAttrs q)) + f))
 >                        (maxEggs q)
 
+Feed all the workers in the nest. Use foodRequested to determine how
+much food the workers in the nest require. If they require more food
+than the Nest has, then the remaining store will be zero, otherwise
+remove the amount requested from the store.
+
 > feedWorkers   :: Nest -> Nest
-> feedWorkers n = n {workers = feedWorkers' n (workers n)}
+> feedWorkers n = n {workers = feedWorkers' (workers n) (foodStore n)
+>                              , foodStore = newStore n}
+>     where newStore n = if foodStore n > foodRequested n
+>                        then foodStore n - foodRequested n
+>                        else 0
 
-> feedWorkers'      :: Nest -> [Worker] -> [Worker]
-> feedWorkers' n ws = undefined
+> feedWorkers'          :: [Worker] -> Integer -> [Worker]
+> feedWorkers' [] _     = []
+> feedWorkers' ws 0     = ws
+> feedWorkers' (w:ws) f = (fst (feedAnt w f) : feedWorkers' ws (snd (feedAnt w f)))
 
-> feedWorkers2   :: Nest -> Nest
-> feedWorkers2 n = n { workers = t
->                    , foodStore = foodStore n }
->     where t = feedWorkers2' (workers n) (foodStore n)
+Feed a single Worker ant. Checks the food store to see if the ant can
+be fully fed, or if it can only eat the reamining store, which may be
+less than it needs. We return both the fed worker and the amount left
+in the foodStore of the Nest.
 
-> feedWorkers2'          :: [Worker] -> Integer -> [Worker]
-> feedWorkers2' [] _     = []
-> feedWorkers2' xs 0     = xs
-> feedWorkers2' (x:xs) f = (feedAnt x : feedWorkers2' xs (f - (food (workerAttrs x) - maxFood) ))
->     where feedAnt = undefined
+> feedAnt     :: Worker -> Integer -> (Worker, Integer)
+> feedAnt w f = if f > (maxFood - food (workerAttrs w))
+>                 then ((Worker
+>                        (Ant (age (workerAttrs w)) (maxFood))
+>                        (role w) (feedingW w))
+>                      , (f - (maxFood - food (workerAttrs w)) ))
+>                 else ((Worker
+>                        (Ant (age (workerAttrs w)) ((food (workerAttrs w)) + f))
+>                        (role w) (feedingW w))
+>                      , 0)
 
-Get the number of ants in list that can be fed, and the amount of food
-out of the food store that will be used.
+Determine the amount of food the Nest would need to fully feed all the
+workers in the nest.
 
-> numCanFeed      :: Nest -> (Integer, Integer)
-> numCanFeed n = (fromIntegral (length fs), last fs)
->     where fs = takeWhile (\x -> x <= foodStore n)
->                   $ scanl (\x y -> (maxFood - (food (workerAttrs y))) + x ) 0
->                     (workers n)
+> foodRequested   :: Nest -> Integer
+> foodRequested n = last
+>                   $ scanl (\x y ->
+>                                (maxFood - (food (workerAttrs y))) + x )
+>                         0 (workers n)
 
 Request a certain amount of food from the Nest stockpile. Return what
 of the request can be fullfiled, and the Nest with the food returned
 removed from the stockpile.
+FIXME: Need to roll foodAvailable and foodRequested into one function
+       that can be used by both feedQueen and feedWorkers
 
 > foodAvailable     :: Integer -> Nest -> (Integer, Nest)
 > foodAvailable r n = if r <= foodStore n
 >                     then (r, n {foodStore = (foodStore n) - r})
 >                     else (foodStore n, n {foodStore = 0})
 
-Determine the roles for the work ants
+Determine the roles for the worker ants. This requires us to look at a
+couple of different factors:
+
+1. How many Larva are there?
+   - This will determine the need for Nursery workers. The workerPerLarva
+     number is used to determine if the Nest is under/overstaffed.
+2. What is the status of the food store?
+   - First we have to determine if the food level of the Queen, if she is
+     below a certain level, then we must gather food to keep the Queen alive.
 
 
 Constants: 
