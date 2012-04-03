@@ -5,17 +5,19 @@ graph so the population over time can be visualized.
 
 > module Antskell where
 
+> import Data.List
+
 A data type handle the different roles that worker ants can assume.
 
 > data Role = Larva | Nursery | Harvester
->           deriving Show
+>           deriving (Eq, Ord, Show)
 
 There are three data types used to model ants, one to cover common
 attributes for all ants, one for workers, and one for the queen.
 
 > data Ant = Ant { age      :: Integer
 >                , food     :: Integer
->                } deriving Show
+>                } deriving (Eq, Show)
 
 The Worker has a feeding weight associated, which is what is going to
 determine the ants access to the nest's food store.
@@ -23,7 +25,7 @@ determine the ants access to the nest's food store.
 > data Worker = Worker { workerAttrs :: Ant
 >                      , role        :: Role
 >                      , feedingW    :: Float
->                      } deriving Show
+>                      } deriving (Eq, Show)
 
 The queen doesn't have a role, since we know what it is. The 'maxEggs'
 is the maximum number of eggsthat the queen can lay in a day - given
@@ -31,7 +33,7 @@ ideal conditions.
 
 > data Queen = Queen { queenAttrs :: Ant
 >                    , maxEggs    :: Integer
->                    } deriving Show
+>                    } deriving (Eq, Show)
 
 Data type for the nest. The 'foodStore' is the total amount of food
 the nest has available.
@@ -39,7 +41,9 @@ the nest has available.
 > data Nest = Nest { workers   :: [Worker]
 >                  , queen     :: Queen
 >                  , foodStore :: Integer
->                  } deriving Show
+>                  } deriving (Eq, Show)
+
+--------------------------------------------------------------------------------
 
 Age and use up some of the food for all the workers in the list and
 remove the ones that have hit the max age, or have starved.
@@ -70,6 +74,8 @@ Time step the entire nest.
 > timeStepNest n = n{ workers = timeStepWorkers (workers n)
 >                   , queen = timeStepQueen (queen n) }
 
+--------------------------------------------------------------------------------
+
 Feed the ants from the stockpile. The ants are weighted and the lower
 the weight, the more likely the ant is going to be fed. The queen is a
 special case and not considered here.
@@ -89,9 +95,14 @@ A data type is used to hold the weight factors
 >                        , ageW          :: Float
 >                        } deriving Show
 
+> weightWorkers   :: Weights -> Nest -> Nest
+> weightWorkers w n = n { workers =
+>                             sortBy compareWeight
+>                                        (weightWorkers' w (workers n)) }
+>     where compareWeight x y = compare (feedingW x) (feedingW y)
 
-> weightWorkers   :: Weights -> [Worker] -> [Worker]
-> weightWorkers x ws = map (weightWorker x) ws
+> weightWorkers'   :: Weights -> [Worker] -> [Worker]
+> weightWorkers' x ws = map (weightWorker x) ws
 >     where weightWorker x w = w { feedingW = ((roleWeight x (role w))
 >                                              + ((hungerW x)
 >                                                 * fromIntegral (food (workerAttrs w)))
@@ -103,7 +114,7 @@ A data type is used to hold the weight factors
 >                              Harvester -> roleHarvester x
 
 > feedNest :: Nest -> Nest
-> feedNest = feedWorkers . feedQueen
+> feedNest = feedWorkers . weightWorkers weightsD  . feedQueen
 
 > feedQueen   :: Nest -> Nest
 > feedQueen n = n { queen = feedQueen' (fst f) (queen n)
@@ -167,6 +178,8 @@ FIXME: Need to roll foodAvailable and foodRequested into one function
 >                     then (r, n {foodStore = (foodStore n) - r})
 >                     else (foodStore n, n {foodStore = 0})
 
+--------------------------------------------------------------------------------
+
 Determine the roles for the worker ants. This requires us to look at a
 couple of different factors:
 
@@ -176,17 +189,64 @@ couple of different factors:
 2. What is the status of the food store?
    - First we have to determine if the food level of the Queen, if she is
      below a certain level, then we must gather food to keep the Queen alive.
+   - Ideally, there should be enough food in the store to allow one unit of
+     food for every Worker.
 
+Determine the age of all the Larva, and turn the Larva that are old
+enough into Harvesters.
+
+> larvaToHarvester    :: [Worker] -> [Worker]
+> larvaToHarvester ws = map oldEnough ws
+>     where oldEnough w = if role w == Larva && age (workerAttrs w) >= adultAge
+>                         then w { role = Harvester }
+>                         else w
+
+Get the number of workers in each Role. Pack it in a tuple so the Role
+and the number are together.
+
+> getRoleNumbers :: [Worker] -> [(Role,Integer)]
+> getRoleNumbers = map numRole
+>                  . getRoleOfLists
+>                  . groupBy sameRole . sortBy compareRole
+>     where compareRole x y = compare (role x) (role y);
+>           sameRole x y = role x == role y;
+>           numRole (r,ws) = (r, fromIntegral $ length ws)
+
+Get the role assoicated with a list a workers - this assumes that the
+list only contains Workers of one Role.
+
+> getRoleOfLists :: [[Worker]] -> [(Role, [Worker])]
+> getRoleOfLists = map (\(x:xs) -> (role x, (x:xs)))
+
+
+--------------------------------------------------------------------------------
+
+Put everything together:
+1. Time step the nest
+   - Every ant ages and uses up some of its food store. Ants that should be
+     dead are removed from the list.
+2. Feed the nest.
+   - Use up the food store and feed as many ants as possible.
+3. Determine roles for ants
+
+> simulateNest :: Nest -> Nest
+> simulateNest = feedNest . timeStepNest
+
+--------------------------------------------------------------------------------
 
 Constants: 
-    maxAge: The maximum age that an ant can have. Dies after
+    maxAge: The maximum age that an ant can have. Dies aftertestLarvaToHarvester3
             it reaches this age.
     maxFood: The maximum amount of food an ant can have.
     foodBurnRate: The amount of food an ant uses in one day.
+    adultAge: The age a Larva can assume another role
+    larvaPerNursery : Number of Larva that can be cared for by a Nursery worker.
     
 > maxAge = 20
 > maxFood = 10
 > foodBurnRate = 1
+> adultAge = 5
+> larvaPerNursery = 2
 
 A few ants for testing
 
