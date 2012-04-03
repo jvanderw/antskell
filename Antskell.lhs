@@ -180,6 +180,32 @@ FIXME: Need to roll foodAvailable and foodRequested into one function
 
 --------------------------------------------------------------------------------
 
+Have the Queen lay eggs - which means creating new Worker ants with
+the role of Larva. Number of Larva created depends on two factors:
+
+1. The food level of the Queen.
+   - If the Queen has a food level below a given amount, then it means
+     that the colony is having an issue getting food - and the number
+     of new Larva should be less than the maximum
+2. The number of Nursery workers.
+   - If the Nursery is already understaffed, then the Queen will not
+     create the full number of Larva, since there is a good chance
+     that they would die from lack of care.
+
+> layEggs   :: Nest -> Nest
+> layEggs n = undefined
+
+Determine the nursery staffing level as a percentage. A fully staffed
+nursery would have a value greater than or equal to 1.0.
+
+> nurseryStaffing    :: [Worker] -> Float
+> nurseryStaffing ws = (n * minLarvaPerNursery) / l
+>     where rs = getRoleNumbers ws;
+>           l  = fromIntegral $ numInRole Larva rs;
+>           n  = fromIntegral $ numInRole Nursery rs
+
+--------------------------------------------------------------------------------
+
 Determine the roles for the worker ants. This requires us to look at a
 couple of different factors:
 
@@ -218,6 +244,14 @@ list only contains Workers of one Role.
 > getRoleOfLists :: [[Worker]] -> [(Role, [Worker])]
 > getRoleOfLists = map (\(x:xs) -> (role x, (x:xs)))
 
+Find the number of Workers assigned to a given role.
+
+> numInRole      :: Role -> [(Role,Integer)] -> Integer
+> numInRole r rs = num $ filter (\x -> fst x == r) rs
+>     where num xs =  case xs of
+>                             [] -> 0
+>                             (y:ys) -> snd y
+
 
 --------------------------------------------------------------------------------
 
@@ -234,26 +268,33 @@ Put everything together:
 
 --------------------------------------------------------------------------------
 
-Constants: 
-    maxAge: The maximum age that an ant can have. Dies aftertestLarvaToHarvester3
+Constants:
+    FIXME: These should be handled in somekind of data type that can be
+           "fed" in.
+    maxAge: The maximum age that an ant can have. Dies after
             it reaches this age.
     maxFood: The maximum amount of food an ant can have.
     foodBurnRate: The amount of food an ant uses in one day.
     adultAge: The age a Larva can assume another role
-    larvaPerNursery : Number of Larva that can be cared for by a Nursery worker.
+    minLarvaPerNursery : Number of Larva that can be cared for by a
+                      Nursery worker.
+    harvestPerWorker : The amount of food one Worker can collect in
+                       one time step.
     
 > maxAge = 20
 > maxFood = 10
 > foodBurnRate = 1
 > adultAge = 5
-> larvaPerNursery = 2
+> minLarvaPerNursery = 2
+> harvestPerWorker = 3
 
 A few ants for testing
 
 > w1 = Worker (Ant 0 5) Harvester 0.0
 > w2 = Worker (Ant 1 1) Harvester 0.0
 > w3 = Worker (Ant 1 9) Nursery 0.0
-> wls = [w1,w2,w3]
+> w4 = Worker (Ant 1 9) Larva 0.0
+> wls = [w1,w2,w3,w4]
 
 Some weights for testing
 

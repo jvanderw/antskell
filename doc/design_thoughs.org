@@ -90,4 +90,7 @@ Thoughs on antskell - the Haskell ant simulator.
    - Stop feeding workers in the list when the food in stockpile runs
      out.
 
-       
+* Deciding roles
+  - Every thing starts out as a Larva, only after it hist "maturation"
+    age does the ant need to be assigned to either the Harvester or
+    Nursery role.
