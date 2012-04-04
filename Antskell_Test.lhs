@@ -30,7 +30,8 @@ Data for use in tests
 >               [ wr8, wr9]
 > workerList2 = ls1In ++ ls1Out
 > workerListOfLists = [ls1In, ls1Out]
-> larvaTestList = [wr1, wr2, wr3, wr4, wr5, wr7, wr10]
+> larvaTestList1 = [wr1, wr2, wr3, wr4, wr5, wr7, wr10]
+> larvaTestList2 = [wr3, wr8, wr4, wr7, wr4, wr7]
 
 --------------------------------------------------------------------------------
 
@@ -101,11 +102,23 @@ Unit tests for Larva production functions.
 > nurseryStaffingTest2 = TestCase $ assertEqual
 >                       "Ratio of Nursery workers to Larva incorrect"
 >                       0.5
->                       ( nurseryStaffing  larvaTestList )
+>                       ( nurseryStaffing  larvaTestList1 )
+
+> numEggsTest1 :: Test
+> numEggsTest1 = TestCase $ assertEqual
+>                "Incorrect number of eggs" 0
+>                ( numEggs larvaTestList1 )
+
+> numEggsTest2 :: Test
+> numEggsTest2 = TestCase $ assertEqual
+>                "Incorrect number of eggs" 1
+>                ( numEggs larvaTestList2 )
 
 > larvaTests :: Test
 > larvaTests = TestList [ nurseryStaffingTest1
->                       , nurseryStaffingTest2 ]
+>                       , nurseryStaffingTest2
+>                       , numEggsTest1
+>                       , numEggsTest2 ]
 
 --------------------------------------------------------------------------------
 

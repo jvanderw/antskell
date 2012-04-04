@@ -94,3 +94,14 @@ Thoughs on antskell - the Haskell ant simulator.
   - Every thing starts out as a Larva, only after it hist "maturation"
     age does the ant need to be assigned to either the Harvester or
     Nursery role.
+
+* Laying eggs
+** Staffing level of nursery
+   So we set a number of workers that are needed to take care of the
+   nursery. If the number of nursery workers falls below 80% of that
+   number, then Larva start to die.
+** Number of eggs
+   The Queen will lay a number of eggs such that the nursery staffing
+   level will be brought down to the 80% level. So:
+
+   0.8 = (numNursery * larvaPerNursery) / (numLarva * numEggs)
