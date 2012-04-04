@@ -183,14 +183,13 @@ FIXME: Need to roll foodAvailable and foodRequested into one function
 Have the Queen lay eggs - which means creating new Worker ants with
 the role of Larva. Number of Larva created depends on two factors:
 
-1. The food level of the Queen.
-   - If the Queen has a food level below a given amount, then it means
-     that the colony is having an issue getting food - and the number
-     of new Larva should be less than the maximum
-2. The number of Nursery workers.
+1. The number of Nursery workers.
    - If the Nursery is already understaffed, then the Queen will not
      create the full number of Larva, since there is a good chance
      that they would die from lack of care.
+   - For this we use the the nurseryStaffing level, if it is above
+     the minNurseryStaffing - then we can lay enough eggs to bring
+     it to the minimum staffing level.
 
 > layEggs   :: Nest -> Nest
 > layEggs n = undefined
@@ -199,7 +198,16 @@ Determine the nursery staffing level as a percentage. A fully staffed
 nursery would have a value greater than or equal to 1.0.
 
 > nurseryStaffing    :: [Worker] -> Float
-> nurseryStaffing ws = (n * minLarvaPerNursery) / l
+> nurseryStaffing ws = (n * larvaPerNursery) / l
+>     where rs = getRoleNumbers ws;
+>           l  = fromIntegral $ numInRole Larva rs;
+>           n  = fromIntegral $ numInRole Nursery rs
+
+Decide on the number of eggs the Queen will lay, if any.
+FIXME: Seems redundant to have nurseryStaffing and numEggs functions.
+
+> numEggs :: [Worker] -> Integer
+> numEggs ws = floor ( (n * larvaPerNursery) / (l * minNurseryStaffing) )
 >     where rs = getRoleNumbers ws;
 >           l  = fromIntegral $ numInRole Larva rs;
 >           n  = fromIntegral $ numInRole Nursery rs
@@ -276,7 +284,7 @@ Constants:
     maxFood: The maximum amount of food an ant can have.
     foodBurnRate: The amount of food an ant uses in one day.
     adultAge: The age a Larva can assume another role
-    minLarvaPerNursery : Number of Larva that can be cared for by a
+    larvaPerNursery : Number of Larva that can be cared for by a
                       Nursery worker.
     harvestPerWorker : The amount of food one Worker can collect in
                        one time step.
@@ -285,7 +293,8 @@ Constants:
 > maxFood = 10
 > foodBurnRate = 1
 > adultAge = 5
-> minLarvaPerNursery = 2
+> larvaPerNursery = 2
+> minNurseryStaffing = 0.8
 > harvestPerWorker = 3
 
 A few ants for testing
