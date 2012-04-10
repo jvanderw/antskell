@@ -102,13 +102,34 @@ Unit tests for Larva production functions.
 
 > numEggsTest1 :: Test
 > numEggsTest1 = TestCase $ assertEqual
->                "Incorrect number of eggs" 0
+>                "numEggsTest1: Incorrect number of eggs"
+>                ( -2 )
 >                ( numEggs larvaTestList1 )
 
 > numEggsTest2 :: Test
 > numEggsTest2 = TestCase $ assertEqual
->                "Incorrect number of eggs" 1
+>                "numEggsTest2: Incorrect number of eggs" 1
 >                ( numEggs larvaTestList2 )
+
+
+> numEggsTest3 :: Test
+> numEggsTest3 = TestCase $ assertEqual
+>                "numEggsTest3: Incorrect number of eggs"
+>                ( -3 )
+>                ( numEggs [wL, wL, wL, wH, wH] )
+
+> numEggsTest4 :: Test
+> numEggsTest4 = TestCase $ assertEqual
+>                "numEggsTest4: Incorrect number of eggs"
+>                ( 0 )
+>                ( numEggs [wH, wH] )
+
+
+> numEggsTest5 :: Test
+> numEggsTest5 = TestCase $ assertEqual
+>                "numEggsTest5: Incorrect number of eggs"
+>                ( 5 )
+>                ( numEggs [wN, wN] )
 
 > createLarvaTest1 :: Test
 > createLarvaTest1 = TestCase $ assertEqual
@@ -138,6 +159,9 @@ Unit tests for Larva production functions.
 > larvaTests :: Test
 > larvaTests = TestList [ numEggsTest1
 >                       , numEggsTest2
+>                       , numEggsTest3
+>                       , numEggsTest4
+>                       , numEggsTest5
 >                       , createLarvaTest1
 >                       , createLarvaTest2
 >                       , layEggsTest1 ]
@@ -205,6 +229,64 @@ Unit tests for determining and setting number of Nursery workers.
 >                             , setNurseryTest1 
 >                             , setNurseryTest2 ]
 
+--------------------------------------------------------------------------------
+
+Unit tests for setting roles of workers in Nest
+
+> setRolesTest1 :: Test
+> setRolesTest1 = TestCase $ assertEqual
+>                 "setRolesTest1: Incorrect numbers for roles set"
+>                 ( testNest1 { workers = [wL, wL, wL, wH, wH, wN]
+>                             , foodStore = 0 } )
+>                 ( setRoles (testNest1 { workers = [wL, wL, wL, wH, wH, wN]
+>                             , foodStore = 0 }) )
+
+> nestRoleSettingTests :: Test
+> nestRoleSettingTests = TestList [ setRolesTest1 ]
+
+--------------------------------------------------------------------------------
+
+Unit tests for food gathering
+
+> gatherFoodTest1 :: Test
+> gatherFoodTest1 = TestCase $ assertEqual
+>                   "gatherFoodTest1: Incorrect Nest foodStore after gather"
+>                 ( testNest1 { workers = [wL, wL, wL, wH, wH, wN]
+>                             , foodStore = 6 } )
+>                 ( gatherFood (testNest1 { workers = [wL, wL, wL, wH, wH, wN]
+>                                          , foodStore = 0 }) )
+
+> foodGatheringTests :: Test
+> foodGatheringTests = TestList [ gatherFoodTest1 ]
+
+--------------------------------------------------------------------------------
+
+Unit tests for removing unattended Larva from the a nest.
+
+> removeLarvaTest1 :: Test
+> removeLarvaTest1 = TestCase $ assertEqual
+>                    "removeLarvaTest1: Incorrect number of Larva removed"
+>                    ( [wH, wH] )
+>                    ( removeLarva [wL, wL, wL, wH, wH] )
+
+> removeLarvaTest2 :: Test
+> removeLarvaTest2 = TestCase $ assertEqual
+>                    "removeLarvaTest2: Incorrect number of Larva removed"
+>                    ( [wL, wL, wN, wN, wH] )
+>                    ( removeLarva [wL, wL, wN, wN, wH] )
+
+> killUnattendLarvaTest1 :: Test
+> killUnattendLarvaTest1 = TestCase $ assertEqual
+>                          "killUnattendLarvaTest1: Incorrect number of Larva removed"
+>                          ( testNest1 { workers = [wL, wL, wN, wH] } )
+>                          ( killUnattendLarva (testNest1 {
+>                                                 workers =
+>                                                     [wL, wL, wL, wL, wN, wH] }) )
+
+> killLarvaTests :: Test
+> killLarvaTests = TestList [ removeLarvaTest1
+>                           , removeLarvaTest2
+>                           , killUnattendLarvaTest1 ]
 
 --------------------------------------------------------------------------------
 
@@ -215,4 +297,7 @@ Run all the given tests
 >                             , getRoleNumbersTests
 >                             , larvaTests
 >                             , harvesterRoleTests
->                             , nurseryRoleTests ]
+>                             , nurseryRoleTests
+>                             , nestRoleSettingTests
+>                             , foodGatheringTests
+>                             , killLarvaTests ]

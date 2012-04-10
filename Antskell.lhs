@@ -192,18 +192,21 @@ the role of Larva. Number of Larva created depends on two factors:
      it to the minimum staffing level.
 
 > layEggs   :: Nest -> Nest
-> layEggs n = n { workers = createLarva (workers n) (numEggs (workers n)) }
->     where totalEggs = if numEggs (workers n) > maxEggs (queen n)
->                       then maxEggs (queen n)
->                       else numEggs (workers n)
+> layEggs n = n { workers = createLarva (workers n) x }
+>             where x = layEggs' n (numEggs (workers n))
 
+> layEggs'     :: Nest -> Integer -> Integer
+> layEggs' n x | x <= 0                = 0
+>              | x > maxEggs (queen n) = maxEggs (queen n)
+>              | otherwise             = x
 
 Decide on the total number of eggs the Queen could lay, if any.  This
 is based on the the amount of Nursery workers above the
-'minNurseryStaffing' percentage there are.
+'minNurseryStaffing' percentage there are. This can return negative
+numbers, which indicates that the nursery is understaffed.
 
 > numEggs :: [Worker] -> Integer
-> numEggs ws = floor ( (n * larvaPerNursery) / (l * minNurseryStaffing) )
+> numEggs ws = floor ( (n * larvaPerNursery) / minNurseryStaffing - l )
 >     where rs = getRoleNumbers ws;
 >           l  = fromIntegral $ numInRole Larva rs;
 >           n  = fromIntegral $ numInRole Nursery rs;
@@ -230,12 +233,12 @@ couple of different factors:
      food for every Worker.
 
 Determine the age of all the Larva, and turn the Larva that are old
-enough into Harvesters.
+enough into adults.
 
 > larvaToHarvester    :: [Worker] -> [Worker]
 > larvaToHarvester ws = map oldEnough ws
 >     where oldEnough w = if role w == Larva && age (workerAttrs w) >= adultAge
->                         then w { role = Harvester }
+>                         then w { role = Nursery }
 >                         else w
 
 Get the number of workers in each Role. Pack it in a tuple so the Role
@@ -295,12 +298,13 @@ number.
 >               else (w, n)
 
 Check the number of Larva and Nursery workers. Find the ideal number,
-and change Harvesters to Nursery workers if needed.
+and change Harvesters to Nursery workers if needed. Need to add the 1
+so that we can create a situation where the queen can at least lay
+some eggs every turn.
 
 > idealNumNursery    :: [Worker] -> Integer
-> idealNumNursery ws = ceiling (l/larvaPerNursery)
->     where rs = getRoleNumbers ws;
->           l  = fromIntegral $ numInRole Larva rs
+> idealNumNursery ws = ceiling (l/larvaPerNursery) + 1
+>     where l = fromIntegral $ numInRole Larva (getRoleNumbers ws)
 
 > setNursery    :: [Worker] -> [Worker]
 > setNursery ws = if x < idealNumNursery ws
@@ -319,7 +323,47 @@ one function.
 >               then (w { role = Nursery }, n - 1)
 >               else (w, n)
 
-Set the roles for the nest.
+Set the roles for the nest. Possible problems with this technique is
+that the need for Harvesters will always override the need for Nursery
+workers - which may not always be what is desired.
+
+> setRoles   :: Nest -> Nest
+> setRoles n = n { workers = setHarvs
+>                  (setNursery (larvaToHarvester (workers n))) (foodStore n) }
+
+--------------------------------------------------------------------------------
+
+Gather food for the nest. Every Harvester will simply bring back the
+amount of food specified by 'harvestPerWorker'. Later, this will be
+limited by the environment, which will have a limited amount of food
+and a regeneration rate at which new food is created.
+
+> gatherFood :: Nest -> Nest
+> gatherFood n = n { foodStore = (foodStore n) + f }
+>     where f = (numInRole Harvester (getRoleNumbers (workers n)))
+>                * harvestPerWorker
+
+--------------------------------------------------------------------------------
+
+Kill off some Larva if there are not enough Nursery workers to care for them.
+FIXME: Should try and remove the youngest first, gives a better chance of 
+creating new workers.
+
+> killUnattendLarva :: Nest -> Nest
+> killUnattendLarva n = n { workers = removeLarva (workers n) }
+
+> removeLarva :: [Worker] -> [Worker]
+> removeLarva ws = removeLarva' ws x
+>     where x = if numEggs ws < 0
+>               then abs (numEggs ws)
+>               else 0
+
+> removeLarva'          :: [Worker] -> Integer -> [Worker]
+> removeLarva' [] _     = []
+> removeLarva' ws 0     = ws
+> removeLarva' (w:ws) n = if role w == Larva
+>                         then removeLarva' ws (n - 1)
+>                         else (w : removeLarva' ws n)
 
 --------------------------------------------------------------------------------
 
@@ -330,14 +374,17 @@ Put everything together:
 2. Feed the nest.
    - Use up the food store and feed as many ants as possible.
 3. Determine roles for ants
+4. Lay eggs
+5. Gather food
+6. Kill off unattended Larva
 
 > simulateNest :: Nest -> Nest
-> simulateNest = layEggs . feedNest . timeStepNest
+> simulateNest = killUnattendLarva . gatherFood . layEggs . setRoles . feedNest . timeStepNest
 
 --------------------------------------------------------------------------------
 
 Constants:
-    FIXME: These should be handled in somekind of data type that can be
+    FIXME: These should be handled in some kind of data type that can be
            "fed" in.
     maxAge: The maximum age that an ant can have. Dies after
             it reaches this age.
@@ -359,9 +406,9 @@ Constants:
 
 A few ants for testing
 
-> w1 = Worker (Ant 0 5) Harvester 0.0
-> w2 = Worker (Ant 1 1) Harvester 0.0
-> w3 = Worker (Ant 1 9) Nursery 0.0
+> w1 = Worker (Ant 5 5) Harvester 0.0
+> w2 = Worker (Ant 5 5) Harvester 0.0
+> w3 = Worker (Ant 5 9) Nursery 0.0
 > w4 = Worker (Ant 1 9) Larva 0.0
 > wls = [w1,w2,w3,w4]
 
