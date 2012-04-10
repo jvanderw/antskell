@@ -192,25 +192,28 @@ the role of Larva. Number of Larva created depends on two factors:
      it to the minimum staffing level.
 
 > layEggs   :: Nest -> Nest
-> layEggs n = undefined
+> layEggs n = n { workers = createLarva (workers n) (numEggs (workers n)) }
+>     where totalEggs = if numEggs (workers n) > maxEggs (queen n)
+>                       then maxEggs (queen n)
+>                       else numEggs (workers n)
 
-Determine the nursery staffing level as a percentage. A fully staffed
-nursery would have a value greater than or equal to 1.0.
 
-> nurseryStaffing    :: [Worker] -> Float
-> nurseryStaffing ws = (n * larvaPerNursery) / l
->     where rs = getRoleNumbers ws;
->           l  = fromIntegral $ numInRole Larva rs;
->           n  = fromIntegral $ numInRole Nursery rs
-
-Decide on the number of eggs the Queen will lay, if any.
-FIXME: Seems redundant to have nurseryStaffing and numEggs functions.
+Decide on the total number of eggs the Queen could lay, if any.  This
+is based on the the amount of Nursery workers above the
+'minNurseryStaffing' percentage there are.
 
 > numEggs :: [Worker] -> Integer
 > numEggs ws = floor ( (n * larvaPerNursery) / (l * minNurseryStaffing) )
 >     where rs = getRoleNumbers ws;
 >           l  = fromIntegral $ numInRole Larva rs;
->           n  = fromIntegral $ numInRole Nursery rs
+>           n  = fromIntegral $ numInRole Nursery rs;
+
+
+Add the number of larva specified to the list of Workers.
+
+> createLarva      :: [Worker] -> Integer -> [Worker]
+> createLarva ws n = ws ++ (genericReplicate n newLarva)
+>     where newLarva = Worker (Ant 0 10) Larva 0.0
 
 --------------------------------------------------------------------------------
 
@@ -260,6 +263,63 @@ Find the number of Workers assigned to a given role.
 >                             [] -> 0
 >                             (y:ys) -> snd y
 
+Setting the number of Harvesters:
+
+Check the food store, and compare that to the number of Workers set to
+be Havrvesters. If it is too low, switch some Nursery workers to the Harvesters
+
+Find the ideal number of worker that should be occupying the Harvester role.
+
+> idealNumHarvs      :: [Worker] -> Integer -> Integer
+> idealNumHarvs ws f = ceiling
+>                      (fromIntegral
+>                       (fromIntegral (length ws) * foodBurnRate - f)
+>                       / fromIntegral harvestPerWorker)
+
+Get the difference between our ideal number, and the the actual number
+of Harvesters. Then set as many Nursery workers as we can to meet that
+number.
+
+> setHarvs      :: [Worker] -> Integer -> [Worker]
+> setHarvs ws f = if x < idealNumHarvs ws f
+>                 then setHarvs' ws (idealNumHarvs ws f - x)
+>                 else ws
+>     where x = numInRole Harvester (getRoleNumbers ws);
+
+> setHarvs'          :: [Worker] -> Integer -> [Worker]
+> setHarvs' [] _                 = []
+> setHarvs' (w:ws) n | n <= 0    = (w:ws)
+>                    | otherwise = (fst t : setHarvs' ws (snd t))
+>     where t = if role w == Nursery
+>               then (w { role = Harvester }, n - 1)
+>               else (w, n)
+
+Check the number of Larva and Nursery workers. Find the ideal number,
+and change Harvesters to Nursery workers if needed.
+
+> idealNumNursery    :: [Worker] -> Integer
+> idealNumNursery ws = ceiling (l/larvaPerNursery)
+>     where rs = getRoleNumbers ws;
+>           l  = fromIntegral $ numInRole Larva rs
+
+> setNursery    :: [Worker] -> [Worker]
+> setNursery ws = if x < idealNumNursery ws
+>                 then setNursery' ws (idealNumNursery ws - x)
+>                 else ws
+>     where x = numInRole Nursery (getRoleNumbers ws);
+
+FIXME: setNursery' and setHarvs' are very similar, could be roled into
+one function.
+
+> setNursery'      :: [Worker] -> Integer -> [Worker]
+> setNursery' [] _                 = []
+> setNursery' (w:ws) n | n <= 0    = (w:ws)
+>                      | otherwise = (fst t : setNursery' ws (snd t))
+>     where t = if role w == Harvester
+>               then (w { role = Nursery }, n - 1)
+>               else (w, n)
+
+Set the roles for the nest.
 
 --------------------------------------------------------------------------------
 
@@ -272,7 +332,7 @@ Put everything together:
 3. Determine roles for ants
 
 > simulateNest :: Nest -> Nest
-> simulateNest = feedNest . timeStepNest
+> simulateNest = layEggs . feedNest . timeStepNest
 
 --------------------------------------------------------------------------------
 
@@ -291,11 +351,11 @@ Constants:
     
 > maxAge = 20
 > maxFood = 10
-> foodBurnRate = 1
+> foodBurnRate = 1::Integer
 > adultAge = 5
 > larvaPerNursery = 2
 > minNurseryStaffing = 0.8
-> harvestPerWorker = 3
+> harvestPerWorker = 3::Integer
 
 A few ants for testing
 
