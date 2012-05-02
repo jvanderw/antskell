@@ -2,6 +2,7 @@
 
 # emacs files
 *~
-emacs.desktop*
+.emacs.desktop*
+
 
 *.gp
