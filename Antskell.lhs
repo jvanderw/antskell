@@ -1,11 +1,35 @@
 Copyright (c) 2012 Jess VanDerwalker. All rights reserved.
 
+Antskell.lhs
+
 Antskell is an ant population simulator which outputs its results to a
 graph so the population over time can be visualized.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------------
 
 > module Antskell where
 
 > import Data.List
+> import System.Random
 
 A data type handle the different roles that worker ants can assume.
 
@@ -56,10 +80,31 @@ remove the ones that have hit the max age, or have starved.
 >             then False
 >             else True
 
+Use an exponential distribution to determine the probabality that an
+ant will die, given an age.
+
+> probOfDeath   :: Integer -> Float
+> probOfDeath x = 1 - e ** (-1/expectedLife * (fromIntegral x))
+>     where e = exp 1
+
+In order to get a random number, we're forced to use IO, since there
+is no other way other than to use a random number generator that
+always returns the same random numbers - i.e. mkStdGen with a given
+seed.
+
+> antDies x = do
+>   y <- (randomRIO (0,1) :: IO Float)
+>   if probOfDeath x > y
+>   then print True
+>   else print False
+
+> getRandom :: IO Float
+> getRandom = randomRIO (0, 1)
+
 > ageAndEat   :: Worker -> Worker
 > ageAndEat w = w{ workerAttrs = Ant{ age = (age(workerAttrs w) + 1)
->                                , food = (food(workerAttrs w)
->                                          - foodBurnRate)}}
+>                                   , food = (food(workerAttrs w)
+>                                             - foodBurnRate)}}
 
 Use up food in the queen's stockpile.
 
@@ -383,6 +428,14 @@ Put everything together:
 
 --------------------------------------------------------------------------------
 
+Use a main with IO so that we can introduce 'random' numbers to model ant death.
+
+> main   :: Integer -> IO ()
+> main x = do 
+>   print "Hello"
+
+--------------------------------------------------------------------------------
+
 Constants:
     FIXME: These should be handled in some kind of data type that can be
            "fed" in.
@@ -397,6 +450,7 @@ Constants:
                        one time step.
     
 > maxAge = 20
+> expectedLife = 30
 > maxFood = 10
 > foodBurnRate = 1::Integer
 > adultAge = 5
