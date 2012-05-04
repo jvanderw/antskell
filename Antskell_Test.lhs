@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Data for use in tests
 
 > wr1  = Worker (Ant 0 5) Harvester 0.0
+> wr1a = Worker (Ant 1 4) Harvester 0.0
 > wr2  = Worker (Ant 1 1) Harvester 0.0
 > wr3  = Worker (Ant 1 9) Nursery 0.0
 > wr4  = Worker (Ant 1 9) Larva 0.0
@@ -61,6 +62,19 @@ Data for use in tests
 
 > testNest1 = Nest larvaTestList1 (Queen (Ant 1 10) 10) 20
 > testNest2 = Nest larvaTestList2 (Queen (Ant 1 10) 10) 20
+
+--------------------------------------------------------------------------------
+
+Unit test for time stepping workers, the queen, and the nest.
+
+> ageAndEatTest :: Test
+> ageAndEatTest = TestCase $ assertEqual
+>                 "Worker food and age not stepped correctly."
+>                 ( wr1a )
+>                 ( ageAndEat wr1 )
+
+> timeStepTests :: Test
+> timeStepTests = TestList [ ageAndEatTest ]
 
 --------------------------------------------------------------------------------
 
@@ -223,19 +237,19 @@ Unit tests for determining and setting number of Nursery workers.
 > idealNumNurseryTest1 :: Test
 > idealNumNurseryTest1 = TestCase $ assertEqual
 >                        "Incorrect ideal number of Nursery workers"
->                        ( 2 )
+>                        ( 3 )
 >                        ( idealNumNursery [wL, wL, wL, wH, wN, wH] )
 
 > idealNumNurseryTest2 :: Test
 > idealNumNurseryTest2 = TestCase $ assertEqual
 >                        "Incorrect ideal number of Nursery workers"
->                        ( 0 )
+>                        ( 1 )
 >                        ( idealNumNursery [wH, wH, wH, wH, wN, wN] )
 
 > setNurseryTest1 :: Test
 > setNurseryTest1 = TestCase $ assertEqual
 >                   "setNurseryTest1: Incorrect number of Nursery workers created"
->                   ( [wL, wL, wL, wN, wN, wH] )
+>                   ( [wL, wL, wL, wN, wN, wN] )
 >                   ( setNursery [wL, wL, wL, wH, wN, wH] )
 
 
@@ -314,7 +328,8 @@ Unit tests for removing unattended Larva from the a nest.
 Run all the given tests
 
 > main :: IO Counts
-> main = runTestTT $ TestList [ larvaToHarvesterTests
+> main = runTestTT $ TestList [ timeStepTests
+>                             , larvaToHarvesterTests
 >                             , getRoleNumbersTests
 >                             , larvaTests
 >                             , harvesterRoleTests
