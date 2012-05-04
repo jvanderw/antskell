@@ -43,6 +43,7 @@ Data for use in tests
 > wr8  = Worker (Ant adultAge 10) Nursery 0.0
 > wr9  = Worker (Ant 10 10) Nursery 0.0 
 > wr10 = wr4
+> wr11  = Worker (Ant 10 1) Nursery 0.0 
 > wrls = [w1,w2,w3,w4]
 > wH = wr6
 > wN = wr8
@@ -63,6 +64,8 @@ Data for use in tests
 > testNest1 = Nest larvaTestList1 (Queen (Ant 1 10) 10) 20
 > testNest2 = Nest larvaTestList2 (Queen (Ant 1 10) 10) 20
 
+> timeStepList1 = [wr5, wr11, wr3, wr1]
+
 --------------------------------------------------------------------------------
 
 Unit test for time stepping workers, the queen, and the nest.
@@ -73,8 +76,36 @@ Unit test for time stepping workers, the queen, and the nest.
 >                 ( wr1a )
 >                 ( ageAndEat wr1 )
 
+> isAliveTest1 :: Test
+> isAliveTest1 = TestCase $ assertEqual
+>                "isAliveTest1: Worker not marked correctly as dead"
+>                ( False )
+>                ( isAlive ((Worker (Ant 30 10) Harvester 0.0), 0.5) )
+
+> isAliveTest2 :: Test
+> isAliveTest2 = TestCase $ assertEqual
+>                "isAliveTest2: Worker not marked correctly as dead."
+>                ( False )
+>                ( isAlive ((Worker (Ant 30 0) Harvester 0.0), 0.9) )
+
+> isAliveTest3 :: Test
+> isAliveTest3 = TestCase $ assertEqual
+>                "isAliveTest3: Worker not marked correctly as alive."
+>                ( True )
+>                ( isAlive ((Worker (Ant 30 10) Harvester 0.0), 0.9) )
+
+> timeStepWorkersTest :: Test
+> timeStepWorkersTest = TestCase $ assertEqual
+>                       "timeStepWorkersTest: Worker list not time stepped correctly"
+>                       ( [ ageAndEat wr3 ] )
+>                       ( timeStepWorkers timeStepList1 [0.1, 0.5, 0.5, 0.0] )
+
 > timeStepTests :: Test
-> timeStepTests = TestList [ ageAndEatTest ]
+> timeStepTests = TestList [ ageAndEatTest
+>                          , isAliveTest1
+>                          , isAliveTest2
+>                          , isAliveTest3
+>                          , timeStepWorkersTest ]
 
 --------------------------------------------------------------------------------
 

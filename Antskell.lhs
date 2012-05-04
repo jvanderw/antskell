@@ -30,6 +30,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 > import Data.List
 > import System.Random
+> import Control.Monad
+> import System.IO
+
+--------------------------------------------------------------------------------
 
 A data type handle the different roles that worker ants can assume.
 
@@ -72,13 +76,24 @@ the nest has available.
 Age and use up some of the food for all the workers in the list and
 remove the ones that have hit the max age, or have starved.
 
-> timeStepWorkers :: [Worker] -> [Worker]
-> timeStepWorkers = filter notDead . map ageAndEat
+The timeStepWorkers function takes a list of floating point numbers in
+the range [0,1]. It is assumed that this is a list of random numbers,
+since it is used to determine if a ant dies.
 
-> notDead   :: Worker -> Bool
-> notDead w = if ((age(workerAttrs w)) > maxAge) || ((food(workerAttrs w)) <= 0)
->             then False
->             else True
+> timeStepWorkers       :: [Worker] -> [Float] -> [Worker]
+> timeStepWorkers ws xs = fst $ unzip $ filter isAlive
+>                         $ zip (map ageAndEat ws) xs
+
+> ageAndEat   :: Worker -> Worker
+> ageAndEat w = w{ workerAttrs = Ant{ age = (age(workerAttrs w) + 1)
+>                                   , food = (food(workerAttrs w)
+>                                             - foodBurnRate)}}
+
+> isAlive   :: (Worker,Float) -> Bool
+> isAlive w = if (probOfDeath (age(workerAttrs (fst w))) > (snd w))
+>             || ((food(workerAttrs (fst w))) <= 0)
+>               then False
+>               else True
 
 Use an exponential distribution to determine the probabality that an
 ant will die, given an age.
@@ -86,25 +101,6 @@ ant will die, given an age.
 > probOfDeath   :: Integer -> Float
 > probOfDeath x = 1 - e ** (-1/expectedLife * (fromIntegral x))
 >     where e = exp 1
-
-In order to get a random number, we're forced to use IO, since there
-is no other way other than to use a random number generator that
-always returns the same random numbers - i.e. mkStdGen with a given
-seed.
-
-> antDies x = do
->   y <- (randomRIO (0,1) :: IO Float)
->   if probOfDeath x > y
->   then print True
->   else print False
-
-> getRandom :: IO Float
-> getRandom = randomRIO (0, 1)
-
-> ageAndEat   :: Worker -> Worker
-> ageAndEat w = w{ workerAttrs = Ant{ age = (age(workerAttrs w) + 1)
->                                   , food = (food(workerAttrs w)
->                                             - foodBurnRate)}}
 
 Use up food in the queen's stockpile.
 
@@ -115,8 +111,8 @@ Use up food in the queen's stockpile.
 
 Time step the entire nest.
 
-> timeStepNest :: Nest -> Nest
-> timeStepNest n = n{ workers = timeStepWorkers (workers n)
+> timeStepNest      :: Nest -> [Float] -> Nest
+> timeStepNest n fs = n{ workers = timeStepWorkers (workers n) fs
 >                   , queen = timeStepQueen (queen n) }
 
 --------------------------------------------------------------------------------
@@ -423,16 +419,12 @@ Put everything together:
 5. Gather food
 6. Kill off unattended Larva
 
-> simulateNest :: Nest -> Nest
-> simulateNest = killUnattendLarva . gatherFood . layEggs . setRoles . feedNest . timeStepNest
+Note that the [Float] is a list of floats in the range [0,1]. This
+list will be used to determine if ants die or not.
 
---------------------------------------------------------------------------------
-
-Use a main with IO so that we can introduce 'random' numbers to model ant death.
-
-> main   :: Integer -> IO ()
-> main x = do 
->   print "Hello"
+> simulateNest :: Nest -> [Float] -> Nest
+> simulateNest n fs = killUnattendLarva $ gatherFood $ layEggs $ setRoles
+>                     $ feedNest $ timeStepNest n fs
 
 --------------------------------------------------------------------------------
 
