@@ -30,11 +30,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 > module AntPlot where
 
 > import Antskell
+> import System.Random
 
 > import qualified Graphics.Gnuplot.Advanced as Plot
 > import qualified Graphics.Gnuplot.Terminal.X11 as X11
 
 > import qualified Graphics.Gnuplot.Frame.OptionSet as Opts
+> import qualified Graphics.Gnuplot.Frame.OptionSet.Histogram as Histogram
 > import qualified Graphics.Gnuplot.Frame as Frame
 > import qualified Graphics.Gnuplot.LineSpecification as LineSpec
 
@@ -43,14 +45,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 > import Graphics.Gnuplot.Plot.TwoDimensional (linearScale, )
 
 > import Data.Monoid
+> import GHC.IO.Exception
 
 --------------------------------------------------------------------------------
 
 Run the Antskell simulation for a given number of time steps with a
 given starting nest.
 
-> runSim     :: Int -> Nest -> [Nest]
-> runSim x n = take x $ iterate simulateNest n
+> runSim        :: Int -> Nest -> [Float] -> [Nest]
+> runSim x n fs = fst $ unzip $ take x $ iterate simulateNest (n, fs)
 
 Create a list of the number of members of a given Role.
 
@@ -75,11 +78,24 @@ Plot the Roles in the list
 >                                       $ Plot2D.list Graph2D.listLines xs)
 >                         $ map (\x -> (x, getRoleList ns x)) rs
 
+Plot the total population of the nest
+
+> plotPop    :: [Nest] -> Plot2D.T Int Int
+> plotPop ns = Plot2D.list Graph2D.listLines
+>              (map (\x -> length (workers x)) ns)
+
+
 
 --------------------------------------------------------------------------------
 
 Main routine to generate desired plots.
 
---> main :: IO
-
-> main = Plot.plot X11.cons $ plotRoles (runSim 100 aNest) [Larva, Nursery, Harvester]
+> main :: Int -> IO ()
+> main x = do
+>          ns <- return (runSim x aNest (randomRs (0,1 :: Float) (mkStdGen 12)))
+>          roles <-  return (plotRoles ns [Larva, Nursery, Harvester])
+>          pop <- return (plotPop ns)
+>          sequence_ $
+>                    Plot.plot X11.cons roles :
+>                    Plot.plot X11.cons pop :
+>                    []

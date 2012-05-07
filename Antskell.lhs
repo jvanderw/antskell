@@ -422,17 +422,19 @@ Put everything together:
 Note that the [Float] is a list of floats in the range [0,1]. This
 list will be used to determine if ants die or not.
 
-> simulateNest :: Nest -> [Float] -> Nest
-> simulateNest n fs = killUnattendLarva $ gatherFood $ layEggs $ setRoles
->                     $ feedNest $ timeStepNest n fs
+> simulateNest :: (Nest, [Float]) -> (Nest, [Float])
+> simulateNest nt = (newNest, newFloats)
+>     where newNest = killUnattendLarva
+>                     $ gatherFood $ layEggs
+>                     $ setRoles $ feedNest
+>                     $ timeStepNest (fst nt) (snd nt);
+>           newFloats = drop (length (workers newNest)) (snd nt)
 
 --------------------------------------------------------------------------------
 
 Constants:
     FIXME: These should be handled in some kind of data type that can be
            "fed" in.
-    maxAge: The maximum age that an ant can have. Dies after
-            it reaches this age.
     maxFood: The maximum amount of food an ant can have.
     foodBurnRate: The amount of food an ant uses in one day.
     adultAge: The age a Larva can assume another role
@@ -441,21 +443,21 @@ Constants:
     harvestPerWorker : The amount of food one Worker can collect in
                        one time step.
     
-> maxAge = 20
-> expectedLife = 30
+> expectedLife = 100
 > maxFood = 10
 > foodBurnRate = 1::Integer
 > adultAge = 5
 > larvaPerNursery = 2
 > minNurseryStaffing = 0.8
-> harvestPerWorker = 3::Integer
+> harvestPerWorker = 4::Integer
+> maxEggsPerTimeStep = 50
 
 A few ants for testing
 
-> w1 = Worker (Ant 5 5) Harvester 0.0
-> w2 = Worker (Ant 5 5) Harvester 0.0
-> w3 = Worker (Ant 5 9) Nursery 0.0
-> w4 = Worker (Ant 1 9) Larva 0.0
+> w1 = Worker (Ant 5 10) Harvester 0.0
+> w2 = Worker (Ant 5 10) Harvester 0.0
+> w3 = Worker (Ant 5 10) Nursery 0.0
+> w4 = Worker (Ant 1 10) Larva 0.0
 > wls = [w1,w2,w3,w4]
 
 Some weights for testing
@@ -464,4 +466,4 @@ Some weights for testing
 
 Finally, a nest
 
-> aNest = Nest wls (Queen (Ant 0 10) 20) 10
+> aNest = Nest wls (Queen (Ant 0 10) 50) 100
